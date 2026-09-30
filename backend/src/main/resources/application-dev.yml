@@ -9,5 +9,10 @@ spring:
       enabled: true
       path: /h2-console
 
+# Valores SOLO para desarrollo local. Son públicos (están en el repositorio).
 veripay:
   demo-datos: true
+  jwt:
+    secreto: solo-desarrollo-no-usar-en-produccion-0123456789
+  admin:
+    password: Admin123!

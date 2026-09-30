@@ -7,8 +7,12 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.Iterator;
 
 import javax.imageio.ImageIO;
+import javax.imageio.ImageReadParam;
+import javax.imageio.ImageReader;
+import javax.imageio.stream.ImageInputStream;
 
 import org.springframework.stereotype.Component;
 
@@ -19,6 +23,11 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public class ComparadorPerceptual implements ComparadorBiometrico {
+
+    /** 40 MP cubre cualquier cámara de teléfono actual. */
+    static final long MAX_PIXELES = 40_000_000L;
+    /** Lado aproximado al que se reduce la imagen al decodificarla. */
+    static final int LADO_DECODIFICADO = 256;
 
     @Override
     public BigDecimal comparar(byte[] imagenIdentificacion, byte[] imagenSelfie) {
@@ -31,16 +40,36 @@ public class ComparadorPerceptual implements ComparadorBiometrico {
         return BigDecimal.valueOf(puntaje).setScale(4, RoundingMode.HALF_UP);
     }
 
-    private static BufferedImage leer(byte[] datos, String etiqueta) {
+    /**
+     * Lee primero solo la cabecera para conocer las dimensiones. Un PNG de pocos KB puede declarar
+     * 30000x30000 px (una "bomba de descompresión") y decodificarlo completo agota la memoria del
+     * servidor. Además se decodifica con submuestreo: los hashes solo necesitan ~9x8 píxeles.
+     */
+    static BufferedImage leer(byte[] datos, String etiqueta) {
         if (datos == null || datos.length == 0) {
             throw new IllegalArgumentException("La imagen de " + etiqueta + " está vacía");
         }
-        try {
-            BufferedImage img = ImageIO.read(new ByteArrayInputStream(datos));
-            if (img == null) {
+        try (ImageInputStream entrada = ImageIO.createImageInputStream(new ByteArrayInputStream(datos))) {
+            Iterator<ImageReader> lectores = ImageIO.getImageReaders(entrada);
+            if (!lectores.hasNext()) {
                 throw new IllegalArgumentException("La imagen de " + etiqueta + " no es un formato soportado (JPG/PNG)");
             }
-            return img;
+            ImageReader lector = lectores.next();
+            try {
+                lector.setInput(entrada, true, true);
+                int ancho = lector.getWidth(0);
+                int alto = lector.getHeight(0);
+                if ((long) ancho * alto > MAX_PIXELES) {
+                    throw new IllegalArgumentException("La imagen de " + etiqueta + " mide " + ancho + "x" + alto
+                            + " px; el máximo es " + (MAX_PIXELES / 1_000_000) + " megapíxeles");
+                }
+                ImageReadParam param = lector.getDefaultReadParam();
+                int paso = Math.max(1, Math.max(ancho, alto) / LADO_DECODIFICADO);
+                param.setSourceSubsampling(paso, paso, 0, 0);
+                return lector.read(0, param);
+            } finally {
+                lector.dispose();
+            }
         } catch (IOException e) {
             throw new IllegalArgumentException("No se pudo leer la imagen de " + etiqueta, e);
         }

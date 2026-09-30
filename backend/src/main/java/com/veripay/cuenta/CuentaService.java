@@ -5,6 +5,9 @@ import java.security.SecureRandom;
 import java.time.Instant;
 import java.util.List;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -46,7 +49,8 @@ public class CuentaService {
 
     @Transactional
     public CuentaResponse abrir(Long clienteId, String usuario) {
-        Cliente cliente = clientes.obtener(clienteId);
+        // Bloquea al cliente: dos aperturas simultáneas no pueden rebasar el límite de cuentas
+        Cliente cliente = clientes.obtenerParaActualizar(clienteId);
         if (cliente.getEstadoKyc() != EstadoKyc.VERIFICADO) {
             throw new NegocioException("KYC_REQUERIDO",
                     "El cliente debe tener la identidad verificada para abrir una cuenta");
@@ -61,28 +65,39 @@ public class CuentaService {
     }
 
     @Transactional
-    public CuentaResponse cambiarEstado(Long cuentaId, boolean bloquear, String usuario) {
+    public CuentaResponse cambiarEstado(Long cuentaId, Cuenta.Estado estado, String usuario) {
         Cuenta cuenta = repository.findByIdParaActualizar(cuentaId)
                 .orElseThrow(() -> new RecursoNoEncontradoException("Cuenta", cuentaId));
-        if (bloquear) {
-            cuenta.bloquear();
-        } else {
-            cuenta.desbloquear();
+        if (cuenta.getEstado() != estado) {
+            if (estado == Cuenta.Estado.BLOQUEADA) {
+                cuenta.bloquear();
+            } else {
+                cuenta.desbloquear();
+            }
+            auditoria.registrar(usuario, estado == Cuenta.Estado.BLOQUEADA ? "BLOQUEO_CUENTA" : "DESBLOQUEO_CUENTA",
+                    "CUENTA", cuentaId, null);
         }
-        auditoria.registrar(usuario, bloquear ? "BLOQUEO_CUENTA" : "DESBLOQUEO_CUENTA", "CUENTA", cuentaId, null);
         return CuentaResponse.de(cuenta);
     }
 
     @Transactional(readOnly = true)
-    public List<CuentaResponse> listar(Long clienteId) {
-        List<Cuenta> cuentas = clienteId == null ? repository.findAllConCliente() : repository.findByClienteId(clienteId);
-        return cuentas.stream().map(CuentaResponse::de).toList();
+    public CuentaResponse obtener(Long id) {
+        return CuentaResponse.de(repository.findConClienteById(id)
+                .orElseThrow(() -> new RecursoNoEncontradoException("Cuenta", id)));
     }
 
+    /** Filtra por CLABE (0 o 1 resultado), por cliente o devuelve todas, siempre paginado. */
     @Transactional(readOnly = true)
-    public CuentaResponse porClabe(String clabe) {
-        return CuentaResponse.de(repository.findByClabe(clabe)
-                .orElseThrow(() -> new RecursoNoEncontradoException("Cuenta", clabe)));
+    public Page<CuentaResponse> listar(Long clienteId, String clabe, Pageable pageable) {
+        if (clabe != null && !clabe.isBlank()) {
+            List<CuentaResponse> una = repository.findByClabe(clabe.trim())
+                    .filter(c -> clienteId == null || c.getCliente().getId().equals(clienteId))
+                    .map(CuentaResponse::de).stream().toList();
+            return new PageImpl<>(una, pageable, una.size());
+        }
+        Page<Cuenta> pagina = clienteId == null ? repository.pagina(pageable)
+                : repository.paginaPorCliente(clienteId, pageable);
+        return pagina.map(CuentaResponse::de);
     }
 
     private String nuevaClabe() {

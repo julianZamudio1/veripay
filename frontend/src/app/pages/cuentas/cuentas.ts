@@ -151,7 +151,7 @@ export class CuentasPage implements OnInit {
   }
 
   alternarBloqueo(k: Cuenta): void {
-    this.api.cambiarBloqueo(k.id, k.estado === 'ACTIVA').subscribe({
+    this.api.cambiarEstadoCuenta(k.id, k.estado === 'ACTIVA' ? 'BLOQUEADA' : 'ACTIVA').subscribe({
       next: (actualizada) => this.cuentas.update((lista) => lista.map((c) => (c.id === actualizada.id ? actualizada : c))),
       error: (e) => this.error.set(mensajeError(e))
     });

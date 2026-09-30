@@ -6,6 +6,7 @@ import java.util.List;
 
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
 import org.springframework.security.oauth2.jwt.JwsHeader;
 import org.springframework.security.oauth2.jwt.JwtClaimsSet;
@@ -41,8 +42,14 @@ public class AuthService {
 
     @Transactional
     public LoginResponse login(LoginRequest request) {
-        authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(request.username(), request.password()));
+        try {
+            authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(request.username(), request.password()));
+        } catch (AuthenticationException e) {
+            String usuario = request.username().length() > 50 ? request.username().substring(0, 50) : request.username();
+            auditoria.registrarAislado(usuario, "LOGIN_FALLIDO", "USUARIO", null, e.getClass().getSimpleName());
+            throw e;
+        }
         Usuario usuario = usuarios.findByUsername(request.username()).orElseThrow();
 
         Instant ahora = Instant.now();

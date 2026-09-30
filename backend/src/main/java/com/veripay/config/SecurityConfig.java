@@ -41,7 +41,7 @@ import com.nimbusds.jose.jwk.source.ImmutableSecret;
 public class SecurityConfig {
 
     @Bean
-    SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    SecurityFilterChain filterChain(HttpSecurity http, RespuestasSeguridad respuestas) throws Exception {
         http
             .csrf(csrf -> csrf.disable())
             .cors(cors -> {})
@@ -49,13 +49,17 @@ public class SecurityConfig {
             // La consola H2 (solo perfil dev) se muestra en un iframe del mismo origen
             .headers(h -> h.frameOptions(f -> f.sameOrigin()))
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/v1/auth/login").permitAll()
                 .requestMatchers("/actuator/health", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                 .requestMatchers(AntPathRequestMatcher.antMatcher("/h2-console/**")).permitAll()
                 .requestMatchers("/api/**").authenticated()
                 // Todo lo demás es el frontend Angular (archivos estáticos)
                 .anyRequest().permitAll())
-            .oauth2ResourceServer(oauth -> oauth.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter())));
+            .exceptionHandling(e -> e.authenticationEntryPoint(respuestas).accessDeniedHandler(respuestas))
+            .oauth2ResourceServer(oauth -> oauth
+                .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter()))
+                .authenticationEntryPoint(respuestas)
+                .accessDeniedHandler(respuestas));
         return http.build();
     }
 
@@ -74,9 +78,11 @@ public class SecurityConfig {
 
     @Bean
     SecretKey jwtKey(VeriPayProperties props) {
-        byte[] bytes = props.jwt().secreto().getBytes(StandardCharsets.UTF_8);
+        String secreto = props.jwt().secreto() == null ? "" : props.jwt().secreto();
+        byte[] bytes = secreto.getBytes(StandardCharsets.UTF_8);
         if (bytes.length < 32) {
-            throw new IllegalStateException("veripay.jwt.secreto debe tener al menos 32 bytes");
+            throw new IllegalStateException("Define la variable de entorno VERIPAY_JWT_SECRETO con al menos 32 caracteres"
+                    + " (o activa el perfil dev para usar el secreto de desarrollo)");
         }
         return new SecretKeySpec(bytes, "HmacSHA256");
     }

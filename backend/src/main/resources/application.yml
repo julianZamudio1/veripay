@@ -36,8 +36,9 @@ springdoc:
 
 veripay:
   jwt:
-    # En producción se inyecta con la variable de entorno VERIPAY_JWT_SECRETO (mínimo 32 caracteres)
-    secreto: ${VERIPAY_JWT_SECRETO:cambia-este-secreto-en-produccion-0123456789}
+    # Obligatorio fuera del perfil dev: variable de entorno VERIPAY_JWT_SECRETO (mínimo 32 caracteres).
+    # Sin valor por defecto a propósito: si falta, la aplicación no arranca.
+    secreto: ${VERIPAY_JWT_SECRETO:}
     expiracion-minutos: 120
   biometria:
     umbral: 0.80
@@ -48,4 +49,6 @@ veripay:
     origenes: http://localhost:4200
   admin:
     username: admin
-    password: ${VERIPAY_ADMIN_PASSWORD:Admin123!}
+    # Si está vacío no se crea el administrador inicial
+    password: ${VERIPAY_ADMIN_PASSWORD:}
+  demo-datos: false

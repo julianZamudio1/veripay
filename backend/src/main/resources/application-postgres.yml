@@ -1,9 +1,8 @@
-# Perfil PostgreSQL: -Dspring.profiles.active=postgres (ver docker-compose.yml en la raíz)
+# Perfil PostgreSQL.
+#   Local con datos demo:  --spring.profiles.active=dev,postgres   (dev aporta secretos de prueba; postgres reemplaza la BD)
+#   Producción:            --spring.profiles.active=postgres       + VERIPAY_JWT_SECRETO, VERIPAY_ADMIN_PASSWORD, VERIPAY_DB_*
 spring:
   datasource:
     url: ${VERIPAY_DB_URL:jdbc:postgresql://localhost:5432/veripay}
     username: ${VERIPAY_DB_USER:veripay}
     password: ${VERIPAY_DB_PASSWORD:veripay}
-
-veripay:
-  demo-datos: true

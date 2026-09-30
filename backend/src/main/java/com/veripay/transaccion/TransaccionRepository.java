@@ -14,6 +14,14 @@ public interface TransaccionRepository extends JpaRepository<Transaccion, Long> 
 
     Optional<Transaccion> findByClaveIdempotencia(String claveIdempotencia);
 
+    @Query("""
+            select t from Transaccion t
+            left join fetch t.cuentaOrigen
+            left join fetch t.cuentaDestino
+            where t.folio = :folio
+            """)
+    Optional<Transaccion> findByFolio(@Param("folio") String folio);
+
     @Query(value = """
             select t from Transaccion t
             left join fetch t.cuentaOrigen

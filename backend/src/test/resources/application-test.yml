@@ -6,3 +6,7 @@ spring:
 
 veripay:
   demo-datos: false
+  jwt:
+    secreto: secreto-de-pruebas-automatizadas-0123456789
+  admin:
+    password: Admin123!

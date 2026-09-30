@@ -29,7 +29,7 @@ export class AuthService {
   }
 
   login(username: string, password: string): Observable<Sesion> {
-    return this.http.post<Sesion>('api/auth/login', { username, password }).pipe(
+    return this.http.post<Sesion>('api/v1/auth/login', { username, password }).pipe(
       tap((s) => {
         this.sesion.set(s);
         this.guardar(s);

@@ -101,9 +101,14 @@ export interface EventoAuditoria {
   creadoEn: string;
 }
 
+/** Error del API en formato RFC 9457 (application/problem+json). */
 export interface ApiError {
+  type: string;
+  title: string;
   status: number;
+  detail: string;
+  instance?: string;
   codigo: string;
-  mensaje: string;
+  timestamp: string;
   campos?: Record<string, string>;
 }

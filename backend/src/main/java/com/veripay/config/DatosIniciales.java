@@ -59,8 +59,11 @@ public class DatosIniciales implements ApplicationRunner {
     @Override
     @Transactional
     public void run(ApplicationArguments args) {
-        if (!usuarios.existsByUsername(props.admin().username())) {
-            usuarios.save(new Usuario(props.admin().username(), encoder.encode(props.admin().password()),
+        String password = props.admin().password();
+        if (password == null || password.isBlank()) {
+            log.warn("VERIPAY_ADMIN_PASSWORD no está definida: no se crea el usuario administrador inicial");
+        } else if (!usuarios.existsByUsername(props.admin().username())) {
+            usuarios.save(new Usuario(props.admin().username(), encoder.encode(password),
                     "Administrador", Rol.ADMIN));
             log.info("Usuario administrador '{}' creado", props.admin().username());
         }

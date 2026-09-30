@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.veripay.auditoria.AuditoriaService;
 import com.veripay.cliente.ClienteDtos.AltaClienteRequest;
 import com.veripay.cliente.ClienteDtos.ContactoRequest;
+import com.veripay.common.ConflictoException;
 import com.veripay.common.NegocioException;
 import com.veripay.common.RecursoNoEncontradoException;
 
@@ -41,10 +42,10 @@ public class ClienteService {
             throw new NegocioException("MENOR_DE_EDAD", "El cliente debe ser mayor de edad");
         }
         if (repository.existsByCurp(curp)) {
-            throw new NegocioException("CURP_DUPLICADA", "Ya existe un cliente con la CURP " + curp);
+            throw new ConflictoException("CURP_DUPLICADA", "Ya existe un cliente con la CURP " + curp);
         }
         if (repository.existsByEmailIgnoreCase(email)) {
-            throw new NegocioException("EMAIL_DUPLICADO", "Ya existe un cliente con el correo " + email);
+            throw new ConflictoException("EMAIL_DUPLICADO", "Ya existe un cliente con el correo " + email);
         }
 
         Cliente cliente = repository.save(new Cliente(curp, vacioANulo(req.rfc()), req.nombre().trim(),
@@ -59,7 +60,7 @@ public class ClienteService {
         Cliente cliente = obtener(id);
         String email = req.email().trim().toLowerCase();
         if (!email.equalsIgnoreCase(cliente.getEmail()) && repository.existsByEmailIgnoreCase(email)) {
-            throw new NegocioException("EMAIL_DUPLICADO", "Ya existe un cliente con el correo " + email);
+            throw new ConflictoException("EMAIL_DUPLICADO", "Ya existe un cliente con el correo " + email);
         }
         cliente.actualizarContacto(email, vacioANulo(req.telefono()));
         auditoria.registrar(usuario, "ACTUALIZA_CONTACTO", "CLIENTE", id, null);
@@ -71,9 +72,17 @@ public class ClienteService {
         return repository.findById(id).orElseThrow(() -> new RecursoNoEncontradoException("Cliente", id));
     }
 
+    /** Obtiene el cliente con bloqueo de escritura; debe llamarse dentro de una transacción. */
+    @Transactional
+    public Cliente obtenerParaActualizar(Long id) {
+        return repository.findByIdParaActualizar(id).orElseThrow(() -> new RecursoNoEncontradoException("Cliente", id));
+    }
+
     @Transactional(readOnly = true)
     public Page<Cliente> buscar(String texto, EstadoKyc estado, Pageable pageable) {
-        return repository.buscar(texto == null ? "" : texto.trim(), estado, pageable);
+        String patron = texto == null ? "" : texto.trim()
+                .replace("!", "!!").replace("%", "!%").replace("_", "!_");
+        return repository.buscar(patron, estado, pageable);
     }
 
     private static String vacioANulo(String s) {

@@ -33,12 +33,12 @@ class ClienteApiTest {
 
     @Test
     void sinTokenResponde401() throws Exception {
-        mvc.perform(get("/api/clientes")).andExpect(status().isUnauthorized());
+        mvc.perform(get("/api/v1/clientes")).andExpect(status().isUnauthorized());
     }
 
     @Test
     void loginConAdminEmiteToken() throws Exception {
-        mvc.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON)
+        mvc.perform(post("/api/v1/auth/login").contentType(MediaType.APPLICATION_JSON)
                         .content("{\"username\":\"admin\",\"password\":\"Admin123!\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.token", notNullValue()))
@@ -47,7 +47,7 @@ class ClienteApiTest {
 
     @Test
     void loginConPasswordIncorrectoResponde401() throws Exception {
-        mvc.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON)
+        mvc.perform(post("/api/v1/auth/login").contentType(MediaType.APPLICATION_JSON)
                         .content("{\"username\":\"admin\",\"password\":\"otra\"}"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.codigo").value("CREDENCIALES"));
@@ -55,7 +55,7 @@ class ClienteApiTest {
 
     @Test
     void altaValidaQuedaPendienteDeKyc() throws Exception {
-        mvc.perform(post("/api/clientes").with(analista()).contentType(MediaType.APPLICATION_JSON)
+        mvc.perform(post("/api/v1/clientes").with(analista()).contentType(MediaType.APPLICATION_JSON)
                         .content(cuerpo("SAMM950610MDFNRR0", "1995-06-10", "maria.api@test.mx")))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.estadoKyc").value("PENDIENTE"))
@@ -69,14 +69,14 @@ class ClienteApiTest {
                 {"curp":"SAMM950610MDFNRR0%d","nombre":"María","apellidoPaterno":"Sánchez",
                  "fechaNacimiento":"1995-06-10","email":"x@test.mx"}
                 """.formatted(digitoErroneo);
-        mvc.perform(post("/api/clientes").with(analista()).contentType(MediaType.APPLICATION_JSON).content(json))
+        mvc.perform(post("/api/v1/clientes").with(analista()).contentType(MediaType.APPLICATION_JSON).content(json))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.campos.curp", notNullValue()));
     }
 
     @Test
     void fechaQueNoCoincideConCurpResponde422() throws Exception {
-        mvc.perform(post("/api/clientes").with(analista()).contentType(MediaType.APPLICATION_JSON)
+        mvc.perform(post("/api/v1/clientes").with(analista()).contentType(MediaType.APPLICATION_JSON)
                         .content(cuerpo("SAMM950611MDFNRR0", "1995-06-12", "otra.fecha@test.mx")))
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.codigo").value("CURP_FECHA"));
@@ -84,7 +84,7 @@ class ClienteApiTest {
 
     @Test
     void auditorNoPuedeDarDeAlta() throws Exception {
-        mvc.perform(post("/api/clientes")
+        mvc.perform(post("/api/v1/clientes")
                         .with(jwt().authorities(new SimpleGrantedAuthority("ROLE_AUDITOR")))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(cuerpo("SAMM950612MDFNRR0", "1995-06-12", "auditor@test.mx")))

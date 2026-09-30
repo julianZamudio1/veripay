@@ -58,7 +58,7 @@ class TransaccionServiceTest {
     @Test
     void transferenciaMueveElDinero() {
         TransaccionResponse r = service.transferir(
-                new TransferenciaRequest(clabeA, clabeB, new BigDecimal("250.00"), "Prueba"), null, "test");
+                new TransferenciaRequest(clabeA, clabeB, new BigDecimal("250.00"), "Prueba"), null, "test").transaccion();
 
         assertThat(r.tipo()).isEqualTo(Transaccion.Tipo.TRANSFERENCIA);
         assertThat(saldo(clabeA)).isEqualByComparingTo("750.00");
@@ -81,11 +81,37 @@ class TransaccionServiceTest {
         var req = new TransferenciaRequest(clabeA, clabeB, new BigDecimal("100.00"), null);
         String clave = "reintento-" + SECUENCIA.incrementAndGet();
 
-        TransaccionResponse primera = service.transferir(req, clave, "test");
-        TransaccionResponse segunda = service.transferir(req, clave, "test");
+        var primera = service.transferir(req, clave, "test");
+        var segunda = service.transferir(req, clave, "test");
 
-        assertThat(segunda.folio()).isEqualTo(primera.folio());
+        assertThat(primera.repetida()).isFalse();
+        assertThat(segunda.repetida()).isTrue();
+        assertThat(segunda.transaccion().folio()).isEqualTo(primera.transaccion().folio());
         assertThat(saldo(clabeA)).isEqualByComparingTo("900.00");
+    }
+
+    @Test
+    void claveReutilizadaEnOtraOperacionSeRechaza() {
+        String clave = "reuso-" + SECUENCIA.incrementAndGet();
+        service.depositar(new OperacionRequest(clabeA, new BigDecimal("10.00"), null), clave, "test");
+
+        // Antes: devolvía el depósito con 201 y el cliente creía que la transferencia se había hecho
+        assertThatThrownBy(() -> service.transferir(
+                new TransferenciaRequest(clabeA, clabeB, new BigDecimal("999.00"), null), clave, "test"))
+                .isInstanceOf(NegocioException.class)
+                .extracting("codigo").isEqualTo("IDEMPOTENCIA_REUTILIZADA");
+        assertThat(saldo(clabeA)).isEqualByComparingTo("1010.00");
+    }
+
+    @Test
+    void claveDeOtroUsuarioSeRechaza() {
+        String clave = "ajena-" + SECUENCIA.incrementAndGet();
+        var req = new OperacionRequest(clabeA, new BigDecimal("10.00"), null);
+        service.depositar(req, clave, "analista");
+
+        assertThatThrownBy(() -> service.depositar(req, clave, "otro"))
+                .isInstanceOf(NegocioException.class)
+                .extracting("codigo").isEqualTo("IDEMPOTENCIA_REUTILIZADA");
     }
 
     @Test
