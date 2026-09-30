@@ -99,7 +99,14 @@ export function mensajeError(err: unknown): string {
       return Object.entries(body.campos).map(([campo, msg]) => `${campo}: ${msg}`).join(' · ');
     }
     if (body?.detail) return body.detail;
-    if (err.status === 0) return 'No hay conexión con el servidor';
+    // Respuestas sin cuerpo RFC 9457: p. ej. un proxy, o un backend con otra versión del API
+    switch (err.status) {
+      case 0: return 'No hay conexión con el servidor';
+      case 401: return 'Usuario o contraseña incorrectos, o tu sesión expiró';
+      case 403: return 'No tienes permiso para esta operación';
+      case 404: return 'El servidor no reconoce esta operación; verifica que el backend esté actualizado';
+    }
+    if (err.status >= 500) return 'El servidor tuvo un error; intenta de nuevo en unos minutos';
   }
   return 'Ocurrió un error inesperado';
 }
