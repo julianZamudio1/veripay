@@ -2,7 +2,7 @@
 
 **Fecha:** 30 de septiembre de 2026
 **Alcance:** backend (Spring Boot), frontend (Angular), configuración y contrato REST.
-**Resultado:** 13 fallas y 8 desviaciones del estilo REST corregidas. 50 pruebas de backend y 5 de frontend en verde.
+**Resultado:** 14 fallas y 8 desviaciones del estilo REST corregidas. 50 pruebas de backend y 5 de frontend en verde. Despliegue verificado en WildFly 41.0.1 (Jakarta EE 10).
 
 ## Cómo se hizo
 
@@ -30,6 +30,7 @@ Severidad: **Crítica** tumba el servicio o compromete dinero; **Alta** rompe un
 | A11 | Media | El KYC permitía reintentos ilimitados: alguien podía probar fotos hasta rebasar el umbral. | Revisión de código. | Máximo 3 rechazos por cliente en 24 horas; después, 422 `KYC_INTENTOS_AGOTADOS`. | `tresRechazosBloqueanNuevosIntentos` |
 | A12 | Baja | Buscar `_` o `%` en clientes devolvía todos los registros: el texto se usaba como comodín de `LIKE`. | Revisión de código. | `ClienteService.buscar` escapa los comodines y la consulta declara `escape '!'`. | Revisión de código |
 | A13 | Baja | `tamano=500` se recortaba a 100 sin avisar. | Revisión de código. | Validación `@Min/@Max`: fuera de rango responde 400. | `tamanoDePaginaFueraDeRangoResponde400` |
+| A14 | Alta | El WAR no desplegaba en WildFly: Jakarta Faces pedía CDI al arrancar y `jboss-deployment-structure.xml` excluía CDI (`weld`). | `WFLYCTL0013 … IllegalStateException: CDI is not available` en `com.sun.faces.config.ConfigureListener`; archivo `veripay.war.failed`. | Se excluye también el subsistema `jsf`: VeriPay no usa JSF. | Despliegue en WildFly 41.0.1: `veripay.war.deployed` y pruebas funcionales (ver abajo) |
 
 ## Desviaciones del estilo REST
 
@@ -55,5 +56,23 @@ Estas observaciones no se corrigieron. Quedan documentadas para decidirlas con e
 | Sin `ETag` / `If-Match` en `PATCH` | Dos analistas pueden sobrescribir el contacto del otro | Exponer `version` como `ETag` y exigir `If-Match` |
 | Claves de idempotencia sin caducidad | La tabla crece sin límite | Tarea programada que libere claves de más de 24 h |
 | Biometría de demostración | `ComparadorPerceptual` usa hashes perceptuales y no reconoce rostros. Una foto reencuadrada de la INE puede pasar. | Conectar un proveedor con reconocimiento facial y prueba de vida mediante `ComparadorBiometrico` |
-| PostgreSQL y WildFly sin probar en esta auditoría | Las pruebas corren sobre H2 y Tomcat embebido | Agregar Testcontainers (PostgreSQL) y un despliegue de prueba en WildFly |
+| PostgreSQL sin probar | Las pruebas corren sobre H2 | Agregar Testcontainers (PostgreSQL) |
+| Avisos de WildFly al desplegar | `WFLYSRV0274` (se excluyen módulos `org.slf4j` que no existen en WildFly 41) y `WFLYEE0007` (componentes asíncronos opcionales de Spring). No afectan el funcionamiento. | Mantener las exclusiones: JBoss EAP 8 sí tiene esos módulos |
 | Karma no termina solo con Edge en Windows | `ng test --watch=false` queda abierto tras reportar resultados | Usar Chrome, o migrar las pruebas a Jest o Vitest |
+
+## Verificación en WildFly
+
+**Entorno:** WildFly 41.0.1.Final, distribución Jakarta EE 10, JDK 17, puertos con `port-offset=100` (HTTP 8180) porque el 8080 lo ocupaba la instancia de Eclipse.
+
+| Prueba | Resultado |
+|---|---|
+| Despliegue por copia a `standalone/deployments` | `veripay.war.deployed`; Spring arranca en ~11 s dentro del servidor |
+| Frontend `/veripay/` y ruta directa `/veripay/clientes/5` | 200; la pantalla del cliente se muestra completa |
+| Login, tablero, cuentas | 200 con token válido |
+| Alta de cliente | 201 con `Location: http://localhost:8180/veripay/api/v1/clientes/5` |
+| Transferencia con `Idempotency-Key` y reintento | 201 + `Location`; el reintento responde `Idempotent-Replayed: true` |
+| JSON mal formado | 400 `BAD_REQUEST` |
+| Petición sin token | 401 con `WWW-Authenticate: Bearer` y `application/problem+json` |
+| Verificación biométrica multipart | 201, puntaje 0.9375 |
+| Imagen bomba de 30000×30000 px | 400; el servidor sigue `UP` |
+| Swagger UI y consola H2 | 200 |

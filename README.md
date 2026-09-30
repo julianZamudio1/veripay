@@ -85,7 +85,7 @@ Ejemplos de petición y respuesta, formato de errores y catálogo de códigos: [
 | [Reglas de negocio](docs/reglas-de-negocio.md) | CURP, KYC, CLABE, límites |
 | [Seguridad](docs/seguridad.md) | JWT, roles, secretos, protecciones |
 | [Operación](docs/operacion.md) | Instalación, perfiles, despliegue, pruebas, problemas comunes |
-| [Auditoría](docs/auditoria.md) | 13 fallas y 8 desviaciones REST corregidas, con evidencia y pendientes |
+| [Auditoría](docs/auditoria.md) | 14 fallas y 8 desviaciones REST corregidas, verificación en WildFly y pendientes |
 
 ## Estructura
 

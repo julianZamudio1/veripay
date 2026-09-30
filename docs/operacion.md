@@ -71,7 +71,22 @@ Flyway crea las tablas en el primer arranque. Para producción usa solo `postgre
 
 ## WildFly o JBoss EAP
 
-**Prueba rápida con H2:** inicia WildFly (`bin/standalone.bat`) y copia `backend/target/veripay.war` a `standalone/deployments/`. Abre http://localhost:8080/veripay/.
+Probado con **WildFly 41.0.1.Final, distribución Jakarta EE 10** (`wildfly-ee-10-41.0.1.Final.zip` en las [releases de WildFly](https://github.com/wildfly/wildfly/releases)). Usa la variante `ee-10`: Spring Boot 3.3 trabaja con Servlet 6.0. El resultado de cada prueba está en [auditoria.md](auditoria.md#verificación-en-wildfly).
+
+**Prueba rápida con H2:**
+
+1. Descomprime WildFly, por ejemplo en `C:\Users\<tú>\wildfly`.
+2. Genera el WAR: `mvn -Pfull clean package` en `backend/`.
+3. Inicia el servidor. Si el puerto 8080 está ocupado (por ejemplo, por la app corriendo en Eclipse), suma 100 a todos los puertos:
+
+   ```bash
+   bin\standalone.bat -Djboss.socket.binding.port-offset=100
+   ```
+
+4. Copia `backend/target/veripay.war` a `standalone/deployments/`. WildFly crea `veripay.war.deployed` si todo sale bien, o `veripay.war.failed` con el error en `standalone/log/server.log`.
+5. Abre http://localhost:8080/veripay/ (o http://localhost:8180/veripay/ con el desplazamiento de puertos).
+
+La base H2 queda en `data/veripay.mv.db`, dentro de la carpeta desde la que arrancaste WildFly.
 
 **Con PostgreSQL y DataSource del servidor:**
 
@@ -82,9 +97,21 @@ Flyway crea las tablas en el primer arranque. Para producción usa solo `postgre
 5. Arranca con el perfil: `bin/standalone.bat -Dspring.profiles.active=jboss`.
 6. Despliega el WAR.
 
-**Desde Eclipse:** instala *JBoss Tools* desde el Marketplace. En la vista `Servers` crea un servidor *WildFly*, agrega el proyecto `veripay` e inícialo.
+**Desde Eclipse:** instala *JBoss Tools* desde el Marketplace. En la vista `Servers` crea un servidor *WildFly* que apunte a la carpeta descomprimida, agrega el proyecto `veripay` e inícialo.
 
-`jboss-deployment-structure.xml` excluye los subsistemas de logging, JPA, JAX-RS y CDI del servidor, porque Spring Boot trae sus propias implementaciones.
+### Por qué `jboss-deployment-structure.xml` excluye subsistemas
+
+Spring Boot trae su propio logging, JPA (Hibernate), validación y capa web. El archivo desactiva los equivalentes de WildFly para que no choquen:
+
+| Subsistema | Motivo |
+|---|---|
+| `logging` | Spring usa Logback; el de WildFly duplicaría la configuración |
+| `jpa` | Spring crea el `EntityManagerFactory`; WildFly intentaría crear otro |
+| `jaxrs` | Los endpoints son de Spring MVC, no de RESTEasy |
+| `weld` | Spring gestiona los beans; CDI no hace falta |
+| `jsf` | Jakarta Faces exige CDI al arrancar. Sin esta exclusión el despliegue falla con `CDI is not available` |
+
+Al desplegar verás avisos `WFLYSRV0274` y `WFLYEE0007`. Son esperados y no afectan el funcionamiento (detalle en [auditoria.md](auditoria.md#pendientes)).
 
 ## Pruebas
 
@@ -110,4 +137,6 @@ npm test
 | `Define la variable de entorno VERIPAY_JWT_SECRETO…` | Perfil distinto de `dev` sin secreto | Define la variable o usa `dev` en local |
 | `insufficient memory` / `errno=1455` al compilar o probar | Windows sin memoria virtual (Eclipse, WSL, bases de datos y el build al mismo tiempo) | Cierra procesos o limita la memoria: `MAVEN_OPTS=-Xmx384m mvn test -DargLine=-Xmx512m` |
 | El frontend responde 404 al recargar `/clientes/5` en el WAR | La ruta no está en `SpaForwardController` | Agrega la ruta nueva a la lista del controlador |
+| `veripay.war.failed` con `CDI is not available` | Un `jboss-deployment-structure.xml` sin la exclusión de `jsf` | Usa el del repositorio, que excluye `jsf` |
+| La app no toma cambios del código en Eclipse | Sigue corriendo una instancia vieja en otra pestaña de la consola | Detén todas las instancias (cuadro rojo) antes de ejecutar de nuevo |
 | `ng test` queda abierto tras "TOTAL: 5 SUCCESS" | Karma con Edge en Windows | Cierra con Ctrl+C; los resultados ya son válidos |
