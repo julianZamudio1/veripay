@@ -1,0 +1,13 @@
+# Perfil de desarrollo: H2 en archivo, consola H2 y datos demo
+spring:
+  datasource:
+    url: jdbc:h2:file:./data/veripay;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH;AUTO_SERVER=TRUE
+    username: sa
+    password:
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+
+veripay:
+  demo-datos: true

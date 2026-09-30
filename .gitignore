@@ -1,0 +1,27 @@
+# Java / Maven
+backend/target/
+backend/data/
+*.class
+*.log
+
+# Eclipse
+.metadata/
+.settings/
+.classpath
+.project
+.factorypath
+bin/
+
+# IntelliJ / VS Code
+.idea/
+*.iml
+.vscode/
+
+# Angular
+frontend/node_modules/
+frontend/dist/
+frontend/.angular/
+
+# SO
+Thumbs.db
+.DS_Store

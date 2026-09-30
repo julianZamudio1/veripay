@@ -1,0 +1,51 @@
+spring:
+  application:
+    name: veripay
+  profiles:
+    default: dev
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate.jdbc.time_zone: UTC
+  flyway:
+    enabled: true
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 12MB
+
+server:
+  port: 8080
+  servlet:
+    # Igual que el context-root de jboss-web.xml: la app vive en /veripay tanto standalone como en WildFly
+    context-path: /veripay
+  error:
+    include-message: always
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+
+veripay:
+  jwt:
+    # En producción se inyecta con la variable de entorno VERIPAY_JWT_SECRETO (mínimo 32 caracteres)
+    secreto: ${VERIPAY_JWT_SECRETO:cambia-este-secreto-en-produccion-0123456789}
+    expiracion-minutos: 120
+  biometria:
+    umbral: 0.80
+  banco:
+    clave-banco: "646"
+    clave-plaza: "180"
+  cors:
+    origenes: http://localhost:4200
+  admin:
+    username: admin
+    password: ${VERIPAY_ADMIN_PASSWORD:Admin123!}

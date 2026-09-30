@@ -1,0 +1,18 @@
+# Crea el DataSource JNDI para el perfil "jboss" en WildFly / JBoss EAP.
+# Uso (con WildFly corriendo):
+#   <WILDFLY_HOME>/bin/jboss-cli.bat --connect --file=configurar-datasource.cli
+#
+# Requiere el driver JDBC de PostgreSQL desplegado previamente:
+#   <WILDFLY_HOME>/bin/jboss-cli.bat --connect --command="deploy postgresql-42.7.4.jar"
+
+data-source add \
+    --name=VeriPayDS \
+    --jndi-name=java:jboss/datasources/VeriPayDS \
+    --driver-name=postgresql-42.7.4.jar \
+    --connection-url=jdbc:postgresql://localhost:5432/veripay \
+    --user-name=veripay \
+    --password=veripay \
+    --min-pool-size=2 \
+    --max-pool-size=20 \
+    --validate-on-match=true \
+    --check-valid-connection-sql="SELECT 1"

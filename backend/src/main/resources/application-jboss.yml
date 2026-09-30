@@ -1,0 +1,5 @@
+# Perfil para JBoss EAP / WildFly usando un DataSource administrado por el servidor (JNDI).
+# Crear el datasource en WildFly con el nombre java:jboss/datasources/VeriPayDS (ver README).
+spring:
+  datasource:
+    jndi-name: java:jboss/datasources/VeriPayDS

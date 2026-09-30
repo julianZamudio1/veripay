@@ -1,0 +1,18 @@
+# PostgreSQL para el perfil "postgres" del backend.
+#   docker compose up -d
+#   (luego ejecutar el backend con -Dspring.profiles.active=postgres)
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: veripay-db
+    environment:
+      POSTGRES_DB: veripay
+      POSTGRES_USER: veripay
+      POSTGRES_PASSWORD: veripay
+    ports:
+      - "5432:5432"
+    volumes:
+      - veripay-data:/var/lib/postgresql/data
+
+volumes:
+  veripay-data:
