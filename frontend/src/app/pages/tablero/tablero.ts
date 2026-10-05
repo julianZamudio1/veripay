@@ -139,6 +139,7 @@ import { Sello } from '../../core/sello';
     @media (max-width: 1080px) { .composicion { grid-template-columns: 1fr; } }
     @media (max-width: 560px) {
       .saldo { padding: 22px 20px 18px; }
+      .textura { height: 54px; bottom: -6px; }
       .datos-saldo { grid-template-columns: 1fr 1fr; gap: 12px 20px; }
     }
   `

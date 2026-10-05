@@ -1,7 +1,11 @@
 package com.veripay.config;
 
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.LocalDate;
+import java.util.HexFormat;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,6 +15,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.veripay.biometria.ComparadorBiometrico;
+import com.veripay.biometria.VerificacionBiometrica;
+import com.veripay.biometria.VerificacionBiometricaRepository;
 import com.veripay.cliente.Cliente;
 import com.veripay.cliente.ClienteDtos.AltaClienteRequest;
 import com.veripay.cliente.ClienteRepository;
@@ -43,10 +50,15 @@ public class DatosIniciales implements ApplicationRunner {
     private final ClienteService clientes;
     private final CuentaService cuentas;
     private final TransaccionService transacciones;
+    private final VerificacionBiometricaRepository verificaciones;
+    private final ComparadorBiometrico comparador;
 
     public DatosIniciales(VeriPayProperties props, UsuarioRepository usuarios, PasswordEncoder encoder,
             ClienteRepository clienteRepository, ClienteService clientes, CuentaService cuentas,
-            TransaccionService transacciones) {
+            TransaccionService transacciones, VerificacionBiometricaRepository verificaciones,
+            ComparadorBiometrico comparador) {
+        this.verificaciones = verificaciones;
+        this.comparador = comparador;
         this.props = props;
         this.usuarios = usuarios;
         this.encoder = encoder;
@@ -81,7 +93,13 @@ public class DatosIniciales implements ApplicationRunner {
         Cliente c3 = alta("RAMC010415HNLMRRA", "Carlos", "Ramírez", "Mendoza", "carlos.ramirez@correo.mx", "8187654321");
         alta("TOVE880130MPLRLL0", "Elena", "Torres", "Vega", "elena.torres@correo.mx", "2229876543");
 
-        for (Cliente c : new Cliente[] {c1, c2, c3}) {
+        // Clientes verificados con su verificación registrada, para que el historial sea coherente
+        String[] puntajes = {"0.6214", "0.5873", "0.6648"};
+        Cliente[] verificados = {c1, c2, c3};
+        for (int i = 0; i < verificados.length; i++) {
+            Cliente c = verificados[i];
+            verificaciones.save(new VerificacionBiometrica(c, new BigDecimal(puntajes[i]),
+                    comparador.umbralRecomendado(), c.getCurp(), huellaDemo("ine", c), huellaDemo("selfie", c), SISTEMA));
             c.marcarKyc(EstadoKyc.VERIFICADO);
         }
         CuentaResponse k1 = cuentas.abrir(c1.getId(), SISTEMA);
@@ -95,6 +113,17 @@ public class DatosIniciales implements ApplicationRunner {
         transacciones.retirar(new OperacionRequest(k3.clabe(), new BigDecimal("500.00"), "Retiro en cajero"), null, SISTEMA);
 
         log.info("Datos demo cargados: 3 usuarios, 4 clientes, 3 cuentas");
+    }
+
+    /** Huella SHA-256 de un texto fijo: los datos demo no tienen imágenes reales. */
+    private static String huellaDemo(String tipo, Cliente c) {
+        try {
+            byte[] h = MessageDigest.getInstance("SHA-256")
+                    .digest(("demo-" + tipo + "-" + c.getCurp()).getBytes(StandardCharsets.UTF_8));
+            return HexFormat.of().formatHex(h);
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException(e);
+        }
     }
 
     private Cliente alta(String curp17, String nombre, String paterno, String materno, String email, String tel) {

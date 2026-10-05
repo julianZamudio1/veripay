@@ -2,13 +2,33 @@
 
 Onboarding de clientes con validación de identidad y pagos electrónicos. Proyecto de portafolio con **Java 17, Spring Boot, JBoss/WildFly, SQL, Angular, HTML, CSS y TypeScript**, desarrollado en **Eclipse**.
 
+![Inicio de sesión de VeriPay](docs/capturas/01-login.webp)
+
 ## Qué hace
 
 1. **Alta de clientes:** valida la CURP con el algoritmo de RENAPO (formato, entidad, fecha y dígito verificador), el RFC y la mayoría de edad.
-2. **Verificación de identidad (KYC):** reconocimiento facial local con OpenCV (YuNet detecta el rostro, SFace lo compara) entre la foto de la INE y una selfie. Guarda la huella SHA-256 de cada imagen, nunca la imagen.
+2. **Verificación de identidad (KYC):** lee la CURP impresa en la INE (PP-OCRv3 + Tesseract, validada con el dígito verificador) y compara el rostro de la INE con una selfie (OpenCV YuNet + SFace). Se aprueba solo si la CURP es la del cliente y el rostro coincide. Guarda la huella SHA-256 de cada imagen, nunca la imagen.
 3. **Cuentas con CLABE:** genera CLABE de 18 dígitos con dígito de control Banxico. Solo un cliente verificado abre cuenta.
 4. **Pagos:** depósitos, retiros y transferencias con bloqueo pesimista ordenado, `Idempotency-Key` y límite por operación.
 5. **Seguridad y auditoría:** JWT, tres roles y una bitácora de cada operación, incluidos los logins fallidos.
+
+## Capturas
+
+| Tablero | Tablero en modo claro |
+|---|---|
+| ![Tablero con saldo administrado, estado de verificación y últimos movimientos](docs/capturas/02-tablero.webp) | ![Tablero en modo claro](docs/capturas/07-tablero-claro.webp) |
+
+| Cliente verificado | Alta con validación de CURP |
+|---|---|
+| ![Cliente con sello de identidad verificada, cuentas e historial de verificación](docs/capturas/04-cliente-verificado.webp) | ![Formulario de alta con la CURP validada en vivo](docs/capturas/05-alta-cliente.webp) |
+
+| Confirmación de transferencia | Clientes |
+|---|---|
+| ![Paso de confirmación antes de enviar una transferencia](docs/capturas/06-confirmar-transferencia.webp) | ![Lista de clientes con su estado de verificación](docs/capturas/03-clientes.webp) |
+
+<p align="center"><img src="docs/capturas/08-movil.webp" alt="Tablero en un teléfono" width="300"></p>
+
+Datos de demostración: los nombres, CURP y CLABE son ficticios.
 
 ## Stack
 

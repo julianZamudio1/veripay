@@ -15,6 +15,7 @@ import { Icono } from '../../core/icono';
         <div class="logo-linea"><span class="logo"><app-guilloche [densidad]="2" detalle="simple" /></span>VeriPay</div>
 
         <app-guilloche class="roseta" [densidad]="7" [animar]="true" />
+        <div class="velo-texto" aria-hidden="true"></div>
 
         <div class="mensaje">
           <h1>Identidad verificada,<br />dinero en movimiento.</h1>
@@ -75,10 +76,12 @@ import { Icono } from '../../core/icono';
     .logo { width: 34px; height: 34px; border-radius: 50%; background: var(--tinta-2); color: var(--lima); padding: 3px;
             display: grid; place-items: center; box-shadow: inset 0 0 0 1px rgb(196 242 90 / .25); }
     .logo app-guilloche { width: 100%; height: 100%; }
-    .roseta { position: absolute; z-index: -1; width: min(78vh, 720px); aspect-ratio: 1; right: -14%; top: 50%;
+    .roseta { position: absolute; z-index: -1; width: min(78vh, 720px); aspect-ratio: 1; right: -16%; top: 50%;
               transform: translateY(-58%); color: rgb(196 242 90 / .55); }
-    .mensaje { max-width: 30ch; }
-    .mensaje h1 { font-size: clamp(2rem, 3.4vw, 3.1rem); line-height: 1.06; letter-spacing: -.035em; margin-bottom: 14px; }
+    /* Velo de tinta sobre la roseta del lado del texto: el mensaje se lee sin cortar el grabado */
+    .velo-texto { position: absolute; z-index: -1; inset: 0; pointer-events: none;
+                  background: linear-gradient(to right, var(--tinta) 12%, rgb(11 14 13 / .85) 38%, transparent 70%); }
+    .mensaje h1 { font-size: clamp(2rem, 3.4vw, 3.1rem); line-height: 1.06; letter-spacing: -.035em; margin-bottom: 14px; white-space: nowrap; }
     .mensaje p { color: var(--tinta-texto); margin: 0; font-size: 1rem; max-width: 42ch; }
     .microtexto { color: rgb(196 242 90 / .3); margin-top: 28px; }
     .banda { position: absolute; z-index: -1; left: 0; right: 0; bottom: 0; height: 90px; color: rgb(196 242 90 / .16); }
@@ -99,7 +102,7 @@ import { Icono } from '../../core/icono';
       .pantalla { grid-template-columns: 1fr; }
       .marca-panel { min-height: 260px; padding: 24px 20px; }
       .roseta { width: 360px; right: -120px; top: 45%; }
-      .mensaje h1 { font-size: 1.75rem; }
+      .mensaje h1 { font-size: 1.75rem; white-space: normal; }
       .mensaje p, .microtexto { display: none; }
       .formulario { padding: 28px 16px 40px; }
     }
