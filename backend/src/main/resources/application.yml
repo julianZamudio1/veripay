@@ -41,7 +41,8 @@ veripay:
     secreto: ${VERIPAY_JWT_SECRETO:}
     expiracion-minutos: 120
   biometria:
-    umbral: 0.80
+    # facial: OpenCV YuNet + SFace (similitud coseno, umbral 0.363) · perceptual: hashes de imagen (pruebas)
+    motor: facial
   banco:
     clave-banco: "646"
     clave-plaza: "180"

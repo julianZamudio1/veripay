@@ -29,7 +29,8 @@ public final class Curp {
         if (curp == null || !FORMATO.matcher(curp).matches()) {
             return false;
         }
-        return fechaNacimiento(curp).isPresent()
+        // Una fecha de nacimiento futura nunca es válida (p. ej. homoclave "O" leída donde había un "0")
+        return fechaNacimiento(curp).filter(f -> !f.isAfter(LocalDate.now())).isPresent()
                 && digitoVerificador(curp.substring(0, 17)) == Character.getNumericValue(curp.charAt(17));
     }
 

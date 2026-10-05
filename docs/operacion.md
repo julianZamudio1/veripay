@@ -129,6 +129,14 @@ npm test
 
 5 pruebas del validador de CURP. Karma necesita Chrome; con Edge define `CHROME_BIN` con la ruta de `msedge.exe`.
 
+## Reconocimiento facial y lectura de la INE en Linux
+
+OpenCV trae sus bibliotecas nativas para Windows, Linux y macOS dentro del JAR. Tesseract (Tess4J) solo las trae para Windows: en Linux instala la biblioteca del sistema antes de arrancar.
+
+```bash
+sudo apt-get install -y libtesseract-dev
+```
+
 ## Problemas comunes
 
 | Síntoma | Causa | Solución |

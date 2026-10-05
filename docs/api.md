@@ -189,8 +189,12 @@ curl -X POST http://localhost:8080/veripay/api/v1/clientes/4/verificaciones \
 ```json
 {
   "id": 1,
-  "puntaje": 0.9375,
-  "umbral": 0.80,
+  "aprobada": true,
+  "puntaje": 0.4368,
+  "umbral": 0.363,
+  "rostroCoincide": true,
+  "curpIne": "GOMA850312HDFRRN09",
+  "curpCoincide": true,
   "aprobada": true,
   "huellaIdentificacion": "8d14e287...",
   "huellaSelfie": "622ec23d...",
@@ -199,7 +203,7 @@ curl -X POST http://localhost:8080/veripay/api/v1/clientes/4/verificaciones \
 }
 ```
 
-Con `aprobada: true` el cliente pasa a `VERIFICADO`; con `false`, a `RECHAZADO`. Errores posibles: 400 `ARGUMENTO_INVALIDO` (imagen ilegible o mayor a 40 MP), 409 `KYC_YA_VERIFICADO`, 422 `IMAGENES_IDENTICAS`, 422 `KYC_INTENTOS_AGOTADOS`.
+Con `aprobada: true` el cliente pasa a `VERIFICADO`; con `false`, a `RECHAZADO`. Errores posibles: 400 `ARGUMENTO_INVALIDO` (imagen ilegible o mayor a 40 MP), 409 `KYC_YA_VERIFICADO`, 422 `IMAGENES_IDENTICAS`, 422 `CURP_ILEGIBLE` y 422 `ROSTRO_NO_DETECTADO` (no cuentan como intento), 422 `KYC_INTENTOS_AGOTADOS`. La similitud es coseno (de -1 a 1) y el umbral es 0.363.
 
 ## Cuentas
 
@@ -317,7 +321,7 @@ Errores posibles: 404 `NO_ENCONTRADO` (CLABE inexistente), 409 `IDEMPOTENCIA_EN_
 | `DUPLICADO` | 409 | Restricción única de la base de datos |
 | `PAYLOAD_TOO_LARGE` | 413 | Un archivo supera 5 MB o la petición 12 MB |
 | `CURP_INVALIDA`, `CURP_FECHA`, `MENOR_DE_EDAD` | 422 | Reglas del alta de cliente |
-| `IMAGENES_IDENTICAS`, `KYC_INTENTOS_AGOTADOS` | 422 | Reglas de la verificación biométrica |
+| `IMAGENES_IDENTICAS`, `CURP_ILEGIBLE`, `ROSTRO_NO_DETECTADO`, `KYC_INTENTOS_AGOTADOS` | 422 | Reglas de la verificación biométrica |
 | `KYC_REQUERIDO`, `LIMITE_CUENTAS` | 422 | Reglas de apertura de cuenta |
 | `SALDO_INSUFICIENTE`, `LIMITE_EXCEDIDO`, `MISMA_CUENTA`, `CUENTA_BLOQUEADA`, `IDEMPOTENCIA_REUTILIZADA` | 422 | Reglas de transacciones |
 | `ERROR_INTERNO` | 500 | Error no previsto |

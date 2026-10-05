@@ -42,4 +42,10 @@ class CurpTest {
         assertThat(Curp.fechaNacimiento(completa("GOMA850312HDFRRN0"))).contains(LocalDate.of(1985, 3, 12));
         assertThat(Curp.fechaNacimiento(completa("RAMC010415HNLMRRA"))).contains(LocalDate.of(2001, 4, 15));
     }
+
+    @Test
+    void rechazaFechaDeNacimientoFutura() {
+        // Homoclave con letra = nacido en 2000 o después: 85 se leería como 2085
+        assertThat(Curp.esValida(completa("GOMA850312HDFRRNO"))).isFalse();
+    }
 }

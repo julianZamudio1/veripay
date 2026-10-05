@@ -28,17 +28,20 @@ public class KycService {
 
     private final ClienteService clientes;
     private final ComparadorBiometrico comparador;
+    private final LectorDocumento lectorDocumento;
     private final VerificacionBiometricaRepository repository;
     private final AuditoriaService auditoria;
     private final BigDecimal umbral;
 
-    public KycService(ClienteService clientes, ComparadorBiometrico comparador,
+    public KycService(ClienteService clientes, ComparadorBiometrico comparador, LectorDocumento lectorDocumento,
             VerificacionBiometricaRepository repository, AuditoriaService auditoria, VeriPayProperties props) {
+        this.lectorDocumento = lectorDocumento;
         this.clientes = clientes;
         this.comparador = comparador;
         this.repository = repository;
         this.auditoria = auditoria;
-        this.umbral = props.biometria().umbral();
+        BigDecimal configurado = props.biometria() == null ? null : props.biometria().umbral();
+        this.umbral = configurado != null ? configurado : comparador.umbralRecomendado();
     }
 
     @Transactional
@@ -63,13 +66,19 @@ public class KycService {
                     "La selfie y la identificación son el mismo archivo; se requieren dos fotografías distintas");
         }
 
+        // Una foto ilegible no es un intento fallido: se pide otra sin contar el intento
+        String curpIne = lectorDocumento.leerCurp(identificacion).orElseThrow(() -> new NegocioException(
+                "CURP_ILEGIBLE", "No se pudo leer la CURP en la INE. Toma la foto de frente, completa, "
+                        + "enfocada y sin reflejos sobre el texto."));
+
         BigDecimal puntaje = comparador.comparar(identificacion, selfie);
         VerificacionBiometrica v = repository.save(new VerificacionBiometrica(
-                cliente, puntaje, umbral, huellaIdentificacion, huellaSelfie, usuario));
+                cliente, puntaje, umbral, curpIne, huellaIdentificacion, huellaSelfie, usuario));
 
         cliente.marcarKyc(v.isAprobada() ? EstadoKyc.VERIFICADO : EstadoKyc.RECHAZADO);
         auditoria.registrar(usuario, v.isAprobada() ? "KYC_APROBADO" : "KYC_RECHAZADO", "CLIENTE", clienteId,
-                "Puntaje " + puntaje + " / umbral " + umbral);
+                "Rostro " + puntaje + " / umbral " + umbral + "; CURP de la INE "
+                        + (v.getCurpCoincide() ? "coincide" : "NO coincide (" + curpIne + ")"));
         return v;
     }
 

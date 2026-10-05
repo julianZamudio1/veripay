@@ -4,11 +4,14 @@ import java.math.BigDecimal;
 
 /**
  * Compara la foto del documento de identidad contra la selfie del cliente.
- * La implementación incluida es perceptual (demo); en producción se sustituye por un
- * proveedor de reconocimiento facial con prueba de vida sin tocar el resto del sistema.
+ * Implementaciones: {@link ComparadorFacial} (reconocimiento facial con OpenCV, por defecto) y
+ * {@link ComparadorPerceptual} (hashes de imagen, para pruebas). Se elige con veripay.biometria.motor.
  */
 public interface ComparadorBiometrico {
 
-    /** @return puntaje de similitud entre 0 y 1 */
+    /** @return puntaje de similitud; su escala depende del motor (ver {@link #umbralRecomendado()}) */
     BigDecimal comparar(byte[] imagenIdentificacion, byte[] imagenSelfie);
+
+    /** Puntaje mínimo para considerar que ambas imágenes son de la misma persona. */
+    BigDecimal umbralRecomendado();
 }

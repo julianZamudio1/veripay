@@ -6,6 +6,10 @@ spring:
 
 veripay:
   demo-datos: false
+  # Las pruebas de KycService usan figuras sintéticas sin rostro: motor de hashes con su umbral
+  biometria:
+    motor: perceptual
+    umbral: 0.80
   jwt:
     secreto: secreto-de-pruebas-automatizadas-0123456789
   admin:

@@ -5,7 +5,7 @@ Onboarding de clientes con validación de identidad y pagos electrónicos. Proye
 ## Qué hace
 
 1. **Alta de clientes:** valida la CURP con el algoritmo de RENAPO (formato, entidad, fecha y dígito verificador), el RFC y la mayoría de edad.
-2. **Verificación de identidad (KYC):** compara la foto de la identificación con una selfie contra un umbral. Guarda la huella SHA-256 de cada imagen, nunca la imagen.
+2. **Verificación de identidad (KYC):** reconocimiento facial local con OpenCV (YuNet detecta el rostro, SFace lo compara) entre la foto de la INE y una selfie. Guarda la huella SHA-256 de cada imagen, nunca la imagen.
 3. **Cuentas con CLABE:** genera CLABE de 18 dígitos con dígito de control Banxico. Solo un cliente verificado abre cuenta.
 4. **Pagos:** depósitos, retiros y transferencias con bloqueo pesimista ordenado, `Idempotency-Key` y límite por operación.
 5. **Seguridad y auditoría:** JWT, tres roles y una bitácora de cada operación, incluidos los logins fallidos.

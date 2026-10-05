@@ -46,16 +46,53 @@ stateDiagram-v2
 | Un cliente verificado no se vuelve a verificar | `KycService` | 409 `KYC_YA_VERIFICADO` |
 | Máximo 3 verificaciones rechazadas en 24 horas | `KycService` | 422 `KYC_INTENTOS_AGOTADOS` |
 | La identificación y la selfie deben ser archivos distintos (SHA-256) | `KycService` | 422 `IMAGENES_IDENTICAS` |
-| JPG o PNG legible, máximo 40 megapíxeles y 5 MB por archivo | `ComparadorPerceptual`, `spring.servlet.multipart` | 400 `ARGUMENTO_INVALIDO` / 413 |
-| Se aprueba con un puntaje igual o mayor al umbral (0.80 por defecto) | `VerificacionBiometrica` | No aplica |
+| JPG o PNG legible, máximo 40 megapíxeles y 5 MB por archivo | `ImagenSegura`, `spring.servlet.multipart` | 400 `ARGUMENTO_INVALIDO` / 413 |
+| La CURP impresa en la INE debe poder leerse; si no, no cuenta como intento rechazado | `LectorCurpOcr` | 422 `CURP_ILEGIBLE` |
+| Cada imagen debe contener un rostro; no cuenta como intento rechazado | `ComparadorFacial` | 422 `ROSTRO_NO_DETECTADO` |
+| Se aprueba solo si **la CURP de la INE es la del cliente** y la similitud coseno del rostro es igual o mayor a 0.363 | `VerificacionBiometrica` | Verificación rechazada |
 
 El sistema **no guarda las imágenes**. Guarda el puntaje, el umbral vigente, quién hizo la verificación y la huella SHA-256 de cada archivo, que basta para demostrar qué se comparó.
 
 Dos verificaciones simultáneas del mismo cliente se procesan una tras otra: `KycService` bloquea la fila del cliente.
 
-### Sobre el comparador incluido
+### Cómo se lee la CURP de la INE
 
-`ComparadorPerceptual` reduce cada imagen a escala de grises y calcula dos hashes de 64 bits (aHash y dHash). El puntaje es el promedio de los bits que coinciden. Tolera cambios de tamaño, recompresión y ajustes de brillo. **No reconoce rostros**: dos fotos distintas de la misma persona pueden obtener un puntaje bajo, y una copia reencuadrada de la identificación puede pasar. En producción se reemplaza por un proveedor con reconocimiento facial y prueba de vida implementando `ComparadorBiometrico`.
+`LectorCurpOcr` combina dos motores:
+
+1. **PP-OCRv3** (detector de OpenCV) localiza los renglones de texto, aunque la credencial esté inclinada.
+2. **Tesseract** lee cada renglón largo, enderezado y limitado a `A-Z` y `0-9`. Se prueban primero los renglones con la proporción de una CURP impresa (unos 9 de ancho por 1 de alto).
+3. Cada lectura se **corrige por posición**: la CURP tiene posiciones solo de letras (1-4, 11-16) y solo de dígitos (5-10, 18), así que un `O` leído en la fecha se cambia por `0`, un `5` en las iniciales por `S`, etc.
+4. Solo se acepta una lectura que pase el **dígito verificador** de RENAPO y cuya fecha dé una edad posible (0 a 110 años). Una lectura con un carácter equivocado casi nunca produce otra CURP válida, así que el sistema no "inventa" CURPs.
+
+La homoclave (posición 17) admite letra o dígito y no se puede corregir por posición. Con `O`/`0`, `G`/`6` y `L`/`1` ambas variantes producen el mismo dígito verificador y solo cambian el siglo (1985 o 2085); se elige la que da una edad posible.
+
+La verificación guarda la CURP leída y si coincidió, para que el historial muestre la evidencia cuando alguien presenta la INE de otra persona.
+
+### Cómo se comparan los rostros
+
+`ComparadorFacial` corre dentro del backend con OpenCV, sin servicios externos:
+
+1. **YuNet** localiza cada rostro y 5 puntos de referencia (ojos, nariz y comisuras). En una INE toma el rostro más grande, porque la credencial también trae una foto fantasma pequeña.
+2. **SFace** alinea el rostro con esos puntos y lo convierte en un vector de 128 números.
+3. El puntaje es la similitud coseno entre ambos vectores, de -1 a 1. Desde 0.363 (el umbral que OpenCV recomienda para SFace) se considera la misma persona.
+
+Resultados medidos con retratos públicos de NASA (pruebas en `ComparadorFacialTest`):
+
+| Par | Similitud | Resultado |
+|---|---|---|
+| Misma persona, fotos con 10 años de diferencia | 0.559 | Misma persona |
+| Misma persona, otra ropa y otro fondo | 0.683 | Misma persona |
+| Personas distintas, mismo traje y mismo fondo | 0.164 | Distintas |
+| Personas distintas | 0.143 a 0.356 | Distintas |
+
+El par distinto más parecido quedó en 0.356, cerca del umbral. Por eso el reconocimiento facial no basta para un KYC real:
+
+- **No hay prueba de vida.** Una foto impresa o una pantalla con la cara de la persona también coincidiría.
+- **La INE no se autentica.** Se lee la CURP, pero no se revisan las medidas de seguridad de la credencial (holograma, microtexto, código QR) ni se consulta al INE si está vigente. Una credencial falsificada con la CURP correcta pasaría.
+
+Ambos huecos se cubren conectando un proveedor especializado mediante la interfaz `ComparadorBiometrico`.
+
+`ComparadorPerceptual` (hashes de imagen) se conserva solo para las pruebas automatizadas con figuras sintéticas, con `veripay.biometria.motor=perceptual`.
 
 ## Cuentas
 

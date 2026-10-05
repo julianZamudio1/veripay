@@ -162,6 +162,6 @@ erDiagram
 |---|---|
 | Un WAR para Tomcat y WildFly | La vacante pide JBoss. `SpringBootServletInitializer` y Tomcat en scope `provided` permiten desplegar el mismo artefacto en ambos. |
 | Bloqueo pesimista en saldos | Con dinero, un reintento por conflicto optimista complica al cliente. El `FOR UPDATE` serializa solo las cuentas involucradas. |
-| `ComparadorBiometrico` como interfaz | La comparación incluida es de demostración. Un proveedor real se conecta con una clase nueva sin tocar `KycService`. |
+| `ComparadorBiometrico` como interfaz | El reconocimiento facial local (OpenCV) se cambia por un proveedor con prueba de vida con una clase nueva, sin tocar `KycService`. |
 | Errores RFC 9457 | Es el estándar del IETF para errores HTTP y Spring 6 lo soporta de forma nativa. |
 | Versión en la ruta | Es visible, fácil de enrutar en un proxy y de probar con `curl`. |

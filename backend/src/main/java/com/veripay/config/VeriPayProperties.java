@@ -18,7 +18,11 @@ public record VeriPayProperties(
     public record Jwt(String secreto, @DefaultValue("120") long expiracionMinutos) {
     }
 
-    public record Biometria(@DefaultValue("0.80") BigDecimal umbral) {
+    /**
+     * @param motor  "facial" (OpenCV YuNet + SFace) o "perceptual" (hashes de imagen, solo para pruebas)
+     * @param umbral opcional; si se omite se usa el recomendado por el motor
+     */
+    public record Biometria(@DefaultValue("facial") String motor, BigDecimal umbral) {
     }
 
     public record Banco(String claveBanco, String clavePlaza) {

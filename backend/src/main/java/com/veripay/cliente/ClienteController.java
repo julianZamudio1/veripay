@@ -42,11 +42,18 @@ import jakarta.validation.constraints.Min;
 @Tag(name = "Clientes y KYC")
 public class ClienteController {
 
-    public record VerificacionResponse(Long id, BigDecimal puntaje, BigDecimal umbral, boolean aprobada,
+    /**
+     * @param rostroCoincide similitud facial igual o mayor al umbral
+     * @param curpIne        CURP leída de la credencial (nula en verificaciones antiguas)
+     * @param curpCoincide   la CURP de la INE es la del cliente (nulo en verificaciones antiguas)
+     */
+    public record VerificacionResponse(Long id, boolean aprobada, BigDecimal puntaje, BigDecimal umbral,
+            boolean rostroCoincide, String curpIne, Boolean curpCoincide,
             String huellaIdentificacion, String huellaSelfie, String realizadaPor, Instant creadoEn) {
 
         static VerificacionResponse de(VerificacionBiometrica v) {
-            return new VerificacionResponse(v.getId(), v.getPuntaje(), v.getUmbral(), v.isAprobada(),
+            return new VerificacionResponse(v.getId(), v.isAprobada(), v.getPuntaje(), v.getUmbral(),
+                    v.isRostroCoincide(), v.getCurpIne(), v.getCurpCoincide(),
                     v.getHuellaIdentificacion(), v.getHuellaSelfie(), v.getRealizadaPor(), v.getCreadoEn());
         }
     }

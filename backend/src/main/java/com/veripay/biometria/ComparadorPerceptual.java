@@ -7,27 +7,33 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.util.Iterator;
 
 import javax.imageio.ImageIO;
 import javax.imageio.ImageReadParam;
 import javax.imageio.ImageReader;
 import javax.imageio.stream.ImageInputStream;
 
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 /**
- * Similitud por hashes perceptuales (aHash + dHash de 64 bits) sobre la imagen en escala de grises.
- * Tolera recompresión, cambio de tamaño y ligeros ajustes de brillo, pero NO es reconocimiento facial:
- * sirve para demostrar el flujo KYC completo sin depender de un servicio externo.
+ * Similitud por hashes perceptuales (aHash + dHash de 64 bits) sobre la imagen completa.
+ * NO reconoce rostros: solo aprueba la misma foto reescalada o recomprimida. Se conserva para
+ * pruebas automatizadas con imágenes sintéticas ({@code veripay.biometria.motor=perceptual}).
  */
 @Component
+@ConditionalOnProperty(name = "veripay.biometria.motor", havingValue = "perceptual")
 public class ComparadorPerceptual implements ComparadorBiometrico {
 
-    /** 40 MP cubre cualquier cámara de teléfono actual. */
-    static final long MAX_PIXELES = 40_000_000L;
+    /** Umbral calibrado para hashes perceptuales: similitud de bits entre 0 y 1. */
+    static final BigDecimal UMBRAL = new BigDecimal("0.80");
     /** Lado aproximado al que se reduce la imagen al decodificarla. */
     static final int LADO_DECODIFICADO = 256;
+
+    @Override
+    public BigDecimal umbralRecomendado() {
+        return UMBRAL;
+    }
 
     @Override
     public BigDecimal comparar(byte[] imagenIdentificacion, byte[] imagenSelfie) {
@@ -41,30 +47,17 @@ public class ComparadorPerceptual implements ComparadorBiometrico {
     }
 
     /**
-     * Lee primero solo la cabecera para conocer las dimensiones. Un PNG de pocos KB puede declarar
-     * 30000x30000 px (una "bomba de descompresión") y decodificarlo completo agota la memoria del
-     * servidor. Además se decodifica con submuestreo: los hashes solo necesitan ~9x8 píxeles.
+     * Valida dimensiones sin decodificar (ver {@link ImagenSegura}) y decodifica con submuestreo:
+     * los hashes solo necesitan ~9x8 píxeles.
      */
     static BufferedImage leer(byte[] datos, String etiqueta) {
-        if (datos == null || datos.length == 0) {
-            throw new IllegalArgumentException("La imagen de " + etiqueta + " está vacía");
-        }
+        ImagenSegura.Dimensiones dim = ImagenSegura.validar(datos, etiqueta);
         try (ImageInputStream entrada = ImageIO.createImageInputStream(new ByteArrayInputStream(datos))) {
-            Iterator<ImageReader> lectores = ImageIO.getImageReaders(entrada);
-            if (!lectores.hasNext()) {
-                throw new IllegalArgumentException("La imagen de " + etiqueta + " no es un formato soportado (JPG/PNG)");
-            }
-            ImageReader lector = lectores.next();
+            ImageReader lector = ImageIO.getImageReaders(entrada).next();
             try {
                 lector.setInput(entrada, true, true);
-                int ancho = lector.getWidth(0);
-                int alto = lector.getHeight(0);
-                if ((long) ancho * alto > MAX_PIXELES) {
-                    throw new IllegalArgumentException("La imagen de " + etiqueta + " mide " + ancho + "x" + alto
-                            + " px; el máximo es " + (MAX_PIXELES / 1_000_000) + " megapíxeles");
-                }
                 ImageReadParam param = lector.getDefaultReadParam();
-                int paso = Math.max(1, Math.max(ancho, alto) / LADO_DECODIFICADO);
+                int paso = Math.max(1, Math.max(dim.ancho(), dim.alto()) / LADO_DECODIFICADO);
                 param.setSourceSubsampling(paso, paso, 0, 0);
                 return lector.read(0, param);
             } finally {

@@ -76,6 +76,20 @@
             <scope>runtime</scope>
         </dependency>
 
+        <!-- OpenCV con bibliotecas nativas para Windows, Linux y macOS: detección (YuNet) y reconocimiento facial (SFace) -->
+        <dependency>
+            <groupId>org.openpnp</groupId>
+            <artifactId>opencv</artifactId>
+            <version>4.9.0-0</version>
+        </dependency>
+
+        <!-- Tesseract OCR (incluye bibliotecas nativas de Windows; en Linux requiere libtesseract del sistema) -->
+        <dependency>
+            <groupId>net.sourceforge.tess4j</groupId>
+            <artifactId>tess4j</artifactId>
+            <version>5.20.0</version>
+        </dependency>
+
         <dependency>
             <groupId>org.springdoc</groupId>
             <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>

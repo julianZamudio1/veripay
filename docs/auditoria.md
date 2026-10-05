@@ -55,7 +55,7 @@ Estas observaciones no se corrigieron. Quedan documentadas para decidirlas con e
 | JWT sin revocación | Un token robado vale hasta que expira (120 min) | Tokens de acceso de 15 min con *refresh token* revocable |
 | Sin `ETag` / `If-Match` en `PATCH` | Dos analistas pueden sobrescribir el contacto del otro | Exponer `version` como `ETag` y exigir `If-Match` |
 | Claves de idempotencia sin caducidad | La tabla crece sin límite | Tarea programada que libere claves de más de 24 h |
-| Biometría de demostración | `ComparadorPerceptual` usa hashes perceptuales y no reconoce rostros. Una foto reencuadrada de la INE puede pasar. | Conectar un proveedor con reconocimiento facial y prueba de vida mediante `ComparadorBiometrico` |
+| KYC sin prueba de vida ni autenticación de la INE | El reconocimiento facial (YuNet + SFace) acepta una foto impresa de la persona. La CURP de la credencial sí se lee y se compara, pero no se revisan holograma ni código QR, ni se consulta al INE | Proveedor con prueba de vida y validación documental, conectado mediante `ComparadorBiometrico` y `LectorDocumento` |
 | PostgreSQL sin probar | Las pruebas corren sobre H2 | Agregar Testcontainers (PostgreSQL) |
 | Avisos de WildFly al desplegar | `WFLYSRV0274` (se excluyen módulos `org.slf4j` que no existen en WildFly 41) y `WFLYEE0007` (componentes asíncronos opcionales de Spring). No afectan el funcionamiento. | Mantener las exclusiones: JBoss EAP 8 sí tiene esos módulos |
 | Karma no termina solo con Edge en Windows | `ng test --watch=false` queda abierto tras reportar resultados | Usar Chrome, o migrar las pruebas a Jest o Vitest |

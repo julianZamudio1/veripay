@@ -49,18 +49,28 @@ public class VerificacionBiometrica {
     @Column(name = "realizada_por", nullable = false, length = 50)
     private String realizadaPor;
 
+    /** CURP leída de la INE por OCR (nula en verificaciones anteriores a la lectura de la credencial). */
+    @Column(name = "curp_ine", length = 18)
+    private String curpIne;
+
+    @Column(name = "curp_coincide")
+    private Boolean curpCoincide;
+
     @Column(name = "creado_en", nullable = false)
     private Instant creadoEn = Instant.now();
 
     protected VerificacionBiometrica() {
     }
 
-    public VerificacionBiometrica(Cliente cliente, BigDecimal puntaje, BigDecimal umbral,
+    /** Se aprueba solo si el rostro coincide y la CURP de la INE es la del cliente. */
+    public VerificacionBiometrica(Cliente cliente, BigDecimal puntaje, BigDecimal umbral, String curpIne,
             String huellaIdentificacion, String huellaSelfie, String realizadaPor) {
         this.cliente = cliente;
         this.puntaje = puntaje;
         this.umbral = umbral;
-        this.aprobada = puntaje.compareTo(umbral) >= 0;
+        this.curpIne = curpIne;
+        this.curpCoincide = cliente.getCurp().equals(curpIne);
+        this.aprobada = isRostroCoincide() && curpCoincide;
         this.huellaIdentificacion = huellaIdentificacion;
         this.huellaSelfie = huellaSelfie;
         this.realizadaPor = realizadaPor;
@@ -75,4 +85,7 @@ public class VerificacionBiometrica {
     public String getHuellaSelfie() { return huellaSelfie; }
     public String getRealizadaPor() { return realizadaPor; }
     public Instant getCreadoEn() { return creadoEn; }
+    public String getCurpIne() { return curpIne; }
+    public Boolean getCurpCoincide() { return curpCoincide; }
+    public boolean isRostroCoincide() { return puntaje.compareTo(umbral) >= 0; }
 }
