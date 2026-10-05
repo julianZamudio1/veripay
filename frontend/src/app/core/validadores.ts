@@ -30,8 +30,10 @@ export function fechaDeCurp(curp: string): string | null {
 }
 
 export function esCurpValida(curp: string): boolean {
+  const fecha = fechaDeCurp(curp);
   return FORMATO_CURP.test(curp)
-    && fechaDeCurp(curp) !== null
+    && fecha !== null
+    && fecha <= new Date().toISOString().substring(0, 10)   // una fecha de nacimiento futura nunca es válida
     && digitoVerificadorCurp(curp.substring(0, 17)) === Number(curp[17]);
 }
 

@@ -47,9 +47,14 @@ export interface AltaCliente {
 
 export interface Verificacion {
   id: number;
+  aprobada: boolean;
+  /** Similitud coseno entre rostros, de -1 a 1 */
   puntaje: number;
   umbral: number;
-  aprobada: boolean;
+  rostroCoincide: boolean;
+  /** CURP leída de la INE; null en verificaciones anteriores a la lectura de la credencial */
+  curpIne: string | null;
+  curpCoincide: boolean | null;
   huellaIdentificacion: string;
   huellaSelfie: string;
   realizadaPor: string;
